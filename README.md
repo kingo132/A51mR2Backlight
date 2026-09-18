@@ -40,6 +40,10 @@ kern_start.cpp
 
 Release builds keep a small set of stage-level `SYSLOG` messages so a failed hook can still be located. High-frequency values such as individual `bklt` and PWM writes are emitted only by Debug builds with `-a51bkldbg`.
 
+The Radeon `bklt` get hook also acts as a capability advertisement, matching the original WhateverGreen Navi10 implementation. `AppleIntelPanelA::setDisplay` probes `getAttributeForConnection('bklt')` before reaching the routed base `AppleIntelPanel::setDisplay`, so the plugin must return success as soon as the Radeon hook is ready even if no cached brightness value is valid yet. Cached-state validity remains tracked separately through `CurrentBrightnessValid`.
+
+The AppleBacklight path deliberately stays on Apple's normal initialisation flow. The plugin only patches the panel-id format and ensures the required panel profiles when `AppleIntelPanel::setDisplay` runs; it does not replay or reconstruct AppleBacklight state after the fact. The Radeon `bklt` capability response is what allows `AppleIntelPanelA` to continue into Apple's own `buildDisplayParams()` path and publish `linear-brightness`.
+
 ## Supported target
 
 - Alienware Area-51m R2
@@ -89,6 +93,8 @@ Example OpenCore entry:
 - `-a51bkloff` — disable the plugin.
 - `-a51bkldbg` — enable plugin debug logging.
 - `-a51bklbeta` — allow loading on a newer kernel than the plugin's declared maximum when supported by the installed Lilu version. Use only for bring-up/testing.
+- `-a51bkllegacycurve` — use the original WEG 100-step PWM mapping for A/B testing instead of the default linear 8-bit mapping.
+- `-a51bklnorestore` — disable reapplying the last known brightness after a later panel-controller initialisation. Useful only for sleep/wake A/B testing.
 
 Logs are prefixed with `A51mR2Backlight` and use `main`, `apple`, and `radeon` module tags.
 
@@ -112,6 +118,33 @@ xcodebuild -jobs 1 -configuration Release
 ```
 
 The archive phase creates a zip under `build/Release/`.
+
+## Runtime diagnostics
+
+Version 1.2 publishes a compact live state set on the plugin IOService so most validation no longer depends on early kernel logs:
+
+```bash
+ioreg -lw0 -r -c A51mR2Backlight
+```
+
+Useful properties include `RadeonHooksReady`, `PanelControllerCaptured`,
+`PanelInitCount`, `BrightnessWriteCount`, `BrightnessRestoreCount`,
+`CurrentBrightnessValid`, `CurrentBrightness`, `MaxBrightness`, `LastPWM`,
+`BrightnessReadCount`, `BrightnessCapabilityFallbackCount`, `PwmMapping`,
+`AppleBacklightHooksReady`, and `PanelProfilesReady`.
+
+The default PWM conversion now preserves AppleBacklight's `linear-brightness`
+domain and quantises directly to AMD's 8-bit backlight value. The full-scale
+value still uses the original `0x1FF00` encoding. Use
+`-a51bkllegacycurve` to compare against the original percentage-based mapping.
+
+On later `dce_panel_cntl_hw_init` calls (for example after a framebuffer
+reinitialisation), the plugin reapplies the last known brightness after the
+original AMD initialiser returns. Both wake behaviours have been observed on
+Sequoia 15.7.7: some wakes restore through ordinary macOS `bklt` writes without
+a new panel init, while others re-run panel init and exercise this fallback
+before macOS sends its follow-up writes. Use `-a51bklnorestore` only for A/B
+testing of the fallback.
 
 ## Tahoe strategy
 

@@ -35,6 +35,12 @@ private:
 
     uint32_t currentBrightness {0};
     uint32_t maxBrightness {0xff7b};
+    uint32_t lastPwmValue {0};
+    uint32_t panelInitCount {0};
+    uint32_t brightnessWriteCount {0};
+    uint32_t brightnessReadCount {0};
+    uint32_t brightnessCapabilityFallbackCount {0};
+    uint32_t brightnessRestoreCount {0};
     void *panelController {nullptr};
 
     mach_vm_address_t orgDcePanelCntlHwInit {0};
@@ -43,6 +49,9 @@ private:
     t_DceDriverSetBacklight orgDceDriverSetBacklight {nullptr};
 
     bool hooksReady {false};
+    bool currentBrightnessValid {false};
+    bool useLegacyPwmMapping {false};
+    bool restoreAfterPanelInit {true};
 
     bool installHooks(KernelPatcher &patcher, size_t index,
                       mach_vm_address_t address, size_t size);
@@ -51,7 +60,9 @@ private:
     bool resolveAndRoutePwmFunctions(KernelPatcher &patcher, size_t index,
                                      mach_vm_address_t address, size_t size);
 
-    void updateMaxBrightnessFromRegistry();
+    void refreshBrightnessStateFromRegistry();
+    void publishDiagnostics();
+    void applyCurrentBrightness(const char *reason);
 
     static SignatureSet signaturesForCurrentKernel();
     static mach_vm_address_t findUniquePattern(mach_vm_address_t address, size_t size,
@@ -60,7 +71,8 @@ private:
                                                   mach_vm_address_t address, size_t size,
                                                   const char *symbol,
                                                   const BytePattern &pattern);
-    static uint32_t convertBrightnessToPwm(uint32_t value, uint32_t maxValue);
+    static uint32_t convertBrightnessToPwm(uint32_t value, uint32_t maxValue,
+                                           bool legacyMapping);
 
     static uint32_t wrapDcePanelCntlHwInit(void *panelController);
     static IOReturn wrapFramebufferSetAttribute(IOService *framebuffer, IOIndex connectIndex,

@@ -9,6 +9,7 @@
 
 #include "kern_applebacklight.hpp"
 #include "kern_applebacklight_data.hpp"
+#include "kern_diagnostics.hpp"
 
 namespace {
 
@@ -37,6 +38,18 @@ KernelPatcher::KextInfo kextMccsControl {
     {},
     KernelPatcher::KextInfo::Unloaded
 };
+
+bool profileMatches(OSDictionary *panels,
+                    const A51BacklightData::ApplePanelProfile &profile) {
+    if (panels == nullptr)
+        return false;
+
+    auto existing = OSDynamicCast(OSData, panels->getObject(profile.name));
+    if (existing == nullptr || existing->getLength() != sizeof(profile.data))
+        return false;
+
+    return memcmp(existing->getBytesNoCopy(), profile.data, sizeof(profile.data)) == 0;
+}
 
 } // namespace
 
@@ -97,6 +110,8 @@ void AppleBacklightPatcher::patchAppleBacklight(KernelPatcher &patcher, size_t i
         return;
     }
 
+    appleBacklightHooksReady = true;
+    publishDiagnostics();
     SYSLOG("apple", "AppleBacklight hooks ready");
 }
 
@@ -113,68 +128,113 @@ void AppleBacklightPatcher::patchMccsControl(KernelPatcher &patcher, size_t inde
         return;
     }
 
+    mccsSuppressionReady = true;
+    publishDiagnostics();
     SYSLOG("apple", "AppleMCCSControl probes disabled");
 }
 
-bool AppleBacklightPatcher::wrapApplePanelSetDisplay(IOService *that, IODisplay *display) {
-    if (!callback->panelProfilesInstalled) {
-        auto panels = OSDynamicCast(OSDictionary, that->getProperty("ApplePanels"));
-        if (panels == nullptr) {
-            SYSLOG("apple", "ApplePanels dictionary is unavailable; will retry");
-        } else {
-            auto rawCopy = panels->copyCollection();
-            auto copiedPanels = OSDynamicCast(OSDictionary, rawCopy);
+bool AppleBacklightPatcher::ensurePanelProfiles(IOService *panelService) {
+    auto panels = panelService
+        ? OSDynamicCast(OSDictionary, panelService->getProperty("ApplePanels"))
+        : nullptr;
 
-            if (copiedPanels != nullptr) {
-                size_t installedProfiles {0};
+    if (panels == nullptr) {
+        panelProfilesReady = false;
+        publishDiagnostics();
+        DBGLOG("apple", "ApplePanels dictionary is unavailable; will retry");
+        return false;
+    }
 
-                for (const auto &profile : A51BacklightData::ApplePanelProfiles) {
-                    auto data = OSData::withBytes(profile.data, sizeof(profile.data));
-                    if (data != nullptr) {
-                        copiedPanels->setObject(profile.name, data);
-                        ++installedProfiles;
-
-                        // Match WhateverGreen's AppleBacklight path: the profile
-                        // OSData objects are intentionally kept alive here.
-                    } else {
-                        SYSLOG("apple", "failed to allocate panel profile %s", profile.name);
-                    }
-                }
-
-                if (installedProfiles == arrsize(A51BacklightData::ApplePanelProfiles) &&
-                    that->setProperty("ApplePanels", copiedPanels)) {
-                    callback->panelProfilesInstalled = true;
-                    SYSLOG("apple", "installed %lu AppleBacklight panel profiles",
-                           installedProfiles);
-                } else {
-                    SYSLOG("apple", "panel profile installation incomplete (%lu/%lu); will retry",
-                           installedProfiles,
-                           arrsize(A51BacklightData::ApplePanelProfiles));
-                }
-            } else {
-                SYSLOG("apple", "failed to copy ApplePanels dictionary; will retry");
-            }
-
-            if (rawCopy != nullptr)
-                rawCopy->release();
+    bool allProfilesMatch = true;
+    for (const auto &profile : A51BacklightData::ApplePanelProfiles) {
+        if (!profileMatches(panels, profile)) {
+            allProfilesMatch = false;
+            break;
         }
     }
+
+    if (allProfilesMatch) {
+        panelProfilesReady = true;
+        publishDiagnostics();
+        return true;
+    }
+
+    auto rawCopy = panels->copyCollection();
+    auto copiedPanels = OSDynamicCast(OSDictionary, rawCopy);
+    if (copiedPanels == nullptr) {
+        if (rawCopy != nullptr)
+            rawCopy->release();
+
+        panelProfilesReady = false;
+        publishDiagnostics();
+        SYSLOG("apple", "failed to copy ApplePanels dictionary; will retry");
+        return false;
+    }
+
+    size_t repairedProfiles {0};
+    bool allocationFailure {false};
+
+    for (const auto &profile : A51BacklightData::ApplePanelProfiles) {
+        if (profileMatches(copiedPanels, profile))
+            continue;
+
+        auto data = OSData::withBytes(profile.data, sizeof(profile.data));
+        if (data == nullptr) {
+            allocationFailure = true;
+            SYSLOG("apple", "failed to allocate panel profile %s", profile.name);
+            continue;
+        }
+
+        copiedPanels->setObject(profile.name, data);
+        ++repairedProfiles;
+
+        // Match WhateverGreen's AppleBacklight ownership behaviour. Current
+        // AppleBacklight keeps these profile objects alive through ApplePanels.
+    }
+
+    bool installed = false;
+    if (!allocationFailure)
+        installed = panelService->setProperty("ApplePanels", copiedPanels);
+
+    if (rawCopy != nullptr)
+        rawCopy->release();
+
+    panelProfilesReady = installed;
+    if (installed) {
+        ++panelProfileRepairCount;
+        SYSLOG("apple", "ensured AppleBacklight panel profiles (%lu repaired)",
+               repairedProfiles);
+    } else {
+        SYSLOG("apple", "panel profile installation incomplete; will retry");
+    }
+
+    publishDiagnostics();
+    return installed;
+}
+
+void AppleBacklightPatcher::publishDiagnostics() {
+    A51Diagnostics::setBool("AppleBacklightHooksReady", appleBacklightHooksReady);
+    A51Diagnostics::setBool("MCCSSuppressionReady", mccsSuppressionReady);
+    A51Diagnostics::setBool("PanelProfilesReady", panelProfilesReady);
+    A51Diagnostics::setUInt32("PanelSetDisplayCount", panelSetDisplayCount);
+    A51Diagnostics::setUInt32("PanelProfileRepairCount", panelProfileRepairCount);
+}
+
+bool AppleBacklightPatcher::wrapApplePanelSetDisplay(IOService *that, IODisplay *display) {
+    ++callback->panelSetDisplayCount;
+    callback->ensurePanelProfiles(that);
 
     const bool result = FunctionCast(
         wrapApplePanelSetDisplay,
         callback->orgApplePanelSetDisplay)(that, display);
 
-    if (!callback->panelResultLogged) {
-        callback->panelResultLogged = true;
+    callback->publishDiagnostics();
 
-        auto parameters = display
-            ? OSDynamicCast(OSDictionary, display->getProperty("IODisplayParameters"))
-            : nullptr;
-        const bool hasLinearBrightness =
-            parameters != nullptr && parameters->getObject("linear-brightness") != nullptr;
-
-        SYSLOG("apple", "panel display set returned %d; linear-brightness=%d",
-               result, hasLinearBrightness);
+    if (callback->panelSetDisplayCount == 1) {
+        SYSLOG("apple", "panel display set returned %d", result);
+    } else {
+        DBGLOG("apple", "panel display set #%u returned %d",
+               callback->panelSetDisplayCount, result);
     }
 
     return result;

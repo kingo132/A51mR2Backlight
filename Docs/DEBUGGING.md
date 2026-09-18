@@ -39,6 +39,37 @@ Then filter the newest matching file:
 sudo grep -Ei   'A51mR2Backlight|AppleBacklight|MCCS|X6000|PWM|panel'   /var/log/Lilu_1.7.2_24.6.txt
 ```
 
+## Live runtime state (1.2+)
+
+After the system reaches the desktop, inspect the plugin directly:
+
+```bash
+ioreg -lw0 -r -c A51mR2Backlight
+```
+
+For a healthy end-to-end brightness path, look for:
+
+```text
+AppleBacklightHooksReady = Yes
+PanelProfilesReady = Yes
+RadeonHooksReady = Yes
+PanelControllerCaptured = Yes
+CurrentBrightnessValid = Yes
+BrightnessWriteCount > 0
+LastPWM > 0   # except at minimum brightness
+```
+
+`PanelInitCount` is useful around sleep/wake, but it is not expected to increase
+on every wake. Both behaviours were observed on the validated Sequoia 15.7.7
+system: one wake left `PanelInitCount` unchanged and restored through ordinary
+`bklt` writes, while another incremented `PanelInitCount` and exercised the
+brightness-restore fallback before follow-up `bklt` writes. If panel init does
+increase, `BrightnessRestoreCount` should also increase once a valid brightness
+value has been observed, unless `-a51bklnorestore` is present.
+
+The default PWM mapping is `linear-8-bit`. Add `-a51bkllegacycurve` only when
+comparing against the original WEG percentage mapping.
+
 ## Stage 0 — plugin loaded
 
 ```bash
@@ -71,8 +102,8 @@ Expected checkpoints:
 apple: @ processing AppleBacklight
 apple: @ AppleBacklight hooks ready
 apple: @ AppleMCCSControl probes disabled
-apple: @ installed 7 AppleBacklight panel profiles
-apple: @ panel display set returned 1; linear-brightness=1
+apple: @ ensured AppleBacklight panel profiles (... repaired)
+apple: @ panel display set returned 1
 ```
 
 Then verify the service exists **and exports a brightness parameter**:
@@ -84,9 +115,21 @@ ioreg -lw0 -r -c AppleBacklightDisplay
 `AppleBacklightDisplay` existing by itself is not enough. Its
 `IODisplayParameters` dictionary must contain `linear-brightness`; otherwise
 macOS will not expose the brightness slider even if the display service is
-present.
+present. Check this on the final `AppleBacklightDisplay` object instead of in
+the routed base `AppleIntelPanel::setDisplay`: Sequoia builds the display
+parameters later in `AppleIntelPanelA::setDisplay`, after the base call returns.
 
 If this stage fails, stay in `kern_applebacklight.*`; do not change Radeon code yet.
+
+
+If `AppleBacklightHooksReady=Yes` but `PanelSetDisplayCount=0` and `linear-brightness` is absent,
+check the Radeon Stage 3 path next. `AppleIntelPanelA::setDisplay` probes
+`getAttributeForConnection('bklt')` as a capability check before it reaches the routed base
+`AppleIntelPanel::setDisplay`. A healthy 1.2 boot normally records at least one
+`BrightnessReadCount`; on Navi10 a failed original query may also increment
+`BrightnessCapabilityFallbackCount` while still returning capability success to Apple.
+Do not add a late AppleBacklight replay: the validated fix is to preserve the original WEG
+`bklt` capability semantics so Apple's normal initialisation can complete.
 
 ## Stage 3 — Radeon framebuffer hooks
 
