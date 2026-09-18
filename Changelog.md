@@ -2,6 +2,7 @@
 
 ## 1.2.1
 
+- Lower the runtime Lilu dependency from 1.7.2 to 1.5.9. The plugin uses public APIs available by Lilu 1.5.9; newer macOS releases should still use an OS-appropriate Lilu version (1.6.8+ for Sequoia, 1.7.2+ for Tahoe). The bootstrap build SDK remains Lilu 1.7.2.
 - Remove the misleading `LinearBrightnessSeen` live diagnostic and the corresponding base-`setDisplay` check. On Sequoia, `linear-brightness` is created later by the derived `AppleIntelPanelA::setDisplay` path, so checking inside the routed base method can report `No` on a fully working system.
 - Keep `AppleBacklightDisplay -> IODisplayParameters -> linear-brightness` as the authoritative end-to-end validation step in the debugging guide.
 - Document both validated sleep/wake behaviours: ordinary `bklt` re-writes without panel reinitialisation, and panel reinitialisation with one successful brightness-restore fallback followed by normal `bklt` writes.

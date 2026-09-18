@@ -50,9 +50,11 @@ The AppleBacklight path deliberately stays on Apple's normal initialisation flow
 - AMD Radeon RX 5700M / Navi10 driving the internal eDP panel
 - macOS Monterey through Tahoe
 - x86_64
-- Lilu 1.7.2 or newer
+- Lilu 1.5.9 or newer (runtime ABI floor)
 
 This is intentionally a machine-specific kext. Other Navi10 laptops may have similar hardware, but they are not the validation target.
+
+The `OSBundleLibraries` dependency is intentionally kept at **Lilu 1.5.9**. The plugin only relies on public Lilu APIs that are available by that release, and 1.5.9 contains the RouteRequest/routing fixes relevant to the hooks used here. This is a loader/ABI minimum, **not** a recommendation to use an old Lilu on a new macOS release. Use a Lilu release appropriate for the OS you boot; in particular, use **1.6.8 or newer on Sequoia** and **1.7.2 or newer on Tahoe**, where Lilu 1.7.2 includes an AMDSupport lockup/panic fix.
 
 ## Installation with OpenCore
 
@@ -108,7 +110,7 @@ The layout follows normal Acidanthera/Lilu plugin projects.
 - [Lilu](https://github.com/acidanthera/Lilu)
 - [MacKernelSDK](https://github.com/acidanthera/MacKernelSDK)
 
-The CI workflow bootstraps dependencies automatically. For a local build from a clean checkout, use the repository bootstrap script. It downloads the official Debug Lilu SDK instead of rebuilding Lilu itself, which avoids old deployment-target failures with current Xcode versions:
+The CI workflow bootstraps dependencies automatically. For a local build from a clean checkout, use the repository bootstrap script. It defaults to the official **Lilu 1.7.2 Debug SDK** for a current, known-good build environment; this build-SDK choice is independent of the lower runtime dependency declared in `Info.plist`. It downloads the SDK instead of rebuilding Lilu itself, which avoids old deployment-target failures with current Xcode versions:
 
 ```bash
 ./Scripts/bootstrap.sh
