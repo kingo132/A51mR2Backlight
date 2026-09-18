@@ -1,0 +1,145 @@
+{
+  "schema": 1,
+  "notes": [
+    "Reference corpus supplied by the project owner.",
+    "Offsets are file offsets in the corresponding Mach-O executable.",
+    "The modern dce_driver_set_backlight signature is intentionally 76 bytes: its former 20-byte prefix matched three functions in Sonoma, Sequoia 15.3 and Tahoe."
+  ],
+  "binaries": [
+    {
+      "label": "bigsur",
+      "file": "AMDRadeonX6000Framebuffer.bigsur",
+      "size": 4193888,
+      "sha256": "e724519b8c1d0658ee3daa3c0f1fc66e0d1d1dfcd4ecff271d6b1fb48e3caf19",
+      "macho_uuid": "A163820E-69B2-3799-8ED8-61BB92CDBB9B",
+      "source_version": "4.6.21.0.0",
+      "signature_family": "legacy",
+      "dce_panel_cntl_hw_init": {
+        "expected_file_offset": "0x124B21",
+        "matches": [
+          "0x124B21"
+        ],
+        "symbol_present": true
+      },
+      "dce_driver_set_backlight": {
+        "expected_file_offset": "0x124F56",
+        "matches": [
+          "0x124F56"
+        ],
+        "symbol_present": true
+      },
+      "framebuffer_methods": {
+        "set_attribute_symbol_present": true,
+        "get_attribute_symbol_present": true
+      }
+    },
+    {
+      "label": "monterey",
+      "file": "AMDRadeonX6000Framebuffer.monterey",
+      "size": 3702656,
+      "sha256": "133c7a8facdf6d6937a912400a8f13902166144bf95cc06da4b1797983b90084",
+      "macho_uuid": "2FE08341-C2AC-391F-91AD-104EB632986C",
+      "source_version": "4.8.54.0.0",
+      "signature_family": "legacy",
+      "dce_panel_cntl_hw_init": {
+        "expected_file_offset": "0x12CB94",
+        "matches": [
+          "0x12CB94"
+        ],
+        "symbol_present": false
+      },
+      "dce_driver_set_backlight": {
+        "expected_file_offset": "0x12CFC9",
+        "matches": [
+          "0x12CFC9"
+        ],
+        "symbol_present": false
+      },
+      "framebuffer_methods": {
+        "set_attribute_symbol_present": true,
+        "get_attribute_symbol_present": true
+      }
+    },
+    {
+      "label": "sonoma",
+      "file": "AMDRadeonX6000Framebuffer.sonoma",
+      "size": 3453236,
+      "sha256": "381d28a81704b013d8b61f251272e361c7de40ca5b0c44959fd2832bb5c5c3c0",
+      "macho_uuid": "63B9D080-B8F5-3C13-8D62-7E308A0E8870",
+      "source_version": "5.5.17.0.0",
+      "signature_family": "modern",
+      "dce_panel_cntl_hw_init": {
+        "expected_file_offset": "0x12D99F",
+        "matches": [
+          "0x12D99F"
+        ],
+        "symbol_present": false
+      },
+      "dce_driver_set_backlight": {
+        "expected_file_offset": "0x12DDD8",
+        "matches": [
+          "0x12DDD8"
+        ],
+        "symbol_present": false
+      },
+      "framebuffer_methods": {
+        "set_attribute_symbol_present": true,
+        "get_attribute_symbol_present": true
+      }
+    },
+    {
+      "label": "sequoia15.3",
+      "file": "AMDRadeonX6000Framebuffer.sequoia.15.3",
+      "size": 3453236,
+      "sha256": "fc7202b1f797a5c979e1032ceb70f17a3c9cb19de6d97429610a892bd4ef294b",
+      "macho_uuid": "425C841B-BAFE-3B4F-8182-CA824CFA8CF9",
+      "source_version": "6.1.13.0.0",
+      "signature_family": "modern",
+      "dce_panel_cntl_hw_init": {
+        "expected_file_offset": "0x12DA0F",
+        "matches": [
+          "0x12DA0F"
+        ],
+        "symbol_present": false
+      },
+      "dce_driver_set_backlight": {
+        "expected_file_offset": "0x12DE48",
+        "matches": [
+          "0x12DE48"
+        ],
+        "symbol_present": false
+      },
+      "framebuffer_methods": {
+        "set_attribute_symbol_present": true,
+        "get_attribute_symbol_present": true
+      }
+    },
+    {
+      "label": "tahoe",
+      "file": "AMDRadeonX6000Framebuffer.tahoe",
+      "size": 3706192,
+      "sha256": "22f9f122efb02d46e93eeb94cdaae0cf3fcaa8ea0ff3e83c8dc99603ab864595",
+      "macho_uuid": "E7531D6B-3201-31A0-97C8-8826F8F69320",
+      "source_version": "7.1.6.0.0",
+      "signature_family": "modern",
+      "dce_panel_cntl_hw_init": {
+        "expected_file_offset": "0x12DCB3",
+        "matches": [
+          "0x12DCB3"
+        ],
+        "symbol_present": false
+      },
+      "dce_driver_set_backlight": {
+        "expected_file_offset": "0x12E0EC",
+        "matches": [
+          "0x12E0EC"
+        ],
+        "symbol_present": false
+      },
+      "framebuffer_methods": {
+        "set_attribute_symbol_present": true,
+        "get_attribute_symbol_present": true
+      }
+    }
+  ]
+}

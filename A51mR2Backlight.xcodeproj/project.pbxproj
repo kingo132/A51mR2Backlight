@@ -12,6 +12,12 @@
 		A51000000000000000000003 /* kern_backlight.hpp in Headers */ = {isa = PBXBuildFile; fileRef = A51000000000000000000013 /* kern_backlight.hpp */; };
 		A51000000000000000000004 /* plugin_start.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A51000000000000000000014 /* plugin_start.cpp */; };
 		A51000000000000000000005 /* libkmod.a in Frameworks */ = {isa = PBXBuildFile; fileRef = A51000000000000000000015 /* libkmod.a */; };
+		A52000000000000000000001 /* kern_applebacklight.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A52000000000000000000011 /* kern_applebacklight.cpp */; };
+		A52000000000000000000002 /* kern_applebacklight.hpp in Headers */ = {isa = PBXBuildFile; fileRef = A52000000000000000000012 /* kern_applebacklight.hpp */; };
+		A52000000000000000000003 /* kern_applebacklight_data.hpp in Headers */ = {isa = PBXBuildFile; fileRef = A52000000000000000000013 /* kern_applebacklight_data.hpp */; };
+		A52000000000000000000004 /* kern_radeonbacklight.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A52000000000000000000014 /* kern_radeonbacklight.cpp */; };
+		A52000000000000000000005 /* kern_radeonbacklight.hpp in Headers */ = {isa = PBXBuildFile; fileRef = A52000000000000000000015 /* kern_radeonbacklight.hpp */; };
+		A52000000000000000000006 /* kern_radeon_signatures.hpp in Headers */ = {isa = PBXBuildFile; fileRef = A52000000000000000000018 /* kern_radeon_signatures.hpp */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -37,6 +43,14 @@
 		A51000000000000000000017 /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
 		A51000000000000000000018 /* LICENSE.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = LICENSE.txt; sourceTree = "<group>"; };
 		A51000000000000000000019 /* Changelog.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = Changelog.md; sourceTree = "<group>"; };
+		A52000000000000000000011 /* kern_applebacklight.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = kern_applebacklight.cpp; sourceTree = "<group>"; };
+		A52000000000000000000012 /* kern_applebacklight.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = kern_applebacklight.hpp; sourceTree = "<group>"; };
+		A52000000000000000000013 /* kern_applebacklight_data.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = kern_applebacklight_data.hpp; sourceTree = "<group>"; };
+		A52000000000000000000014 /* kern_radeonbacklight.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = kern_radeonbacklight.cpp; sourceTree = "<group>"; };
+		A52000000000000000000015 /* kern_radeonbacklight.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = kern_radeonbacklight.hpp; sourceTree = "<group>"; };
+		A52000000000000000000016 /* DEBUGGING.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = Docs/DEBUGGING.md; sourceTree = SOURCE_ROOT; };
+		A52000000000000000000017 /* bootstrap.sh */ = {isa = PBXFileReference; lastKnownFileType = text.script.sh; path = bootstrap.sh; sourceTree = "<group>"; };
+		A52000000000000000000018 /* kern_radeon_signatures.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = kern_radeon_signatures.hpp; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -57,6 +71,7 @@
 				A51000000000000000000031 /* A51mR2Backlight */,
 				A51000000000000000000032 /* Dependencies */,
 				A51000000000000000000033 /* Docs */,
+				A52000000000000000000034 /* Scripts */,
 				A51000000000000000000034 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -64,12 +79,42 @@
 		A51000000000000000000031 /* A51mR2Backlight */ = {
 			isa = PBXGroup;
 			children = (
-				A51000000000000000000011 /* kern_start.cpp */,
-				A51000000000000000000012 /* kern_backlight.cpp */,
-				A51000000000000000000013 /* kern_backlight.hpp */,
+				A52000000000000000000031 /* Core */,
+				A52000000000000000000032 /* AppleBacklight */,
+				A52000000000000000000033 /* Radeon */,
 				A51000000000000000000016 /* Info.plist */,
 			);
 			path = A51mR2Backlight;
+			sourceTree = "<group>";
+		};
+		A52000000000000000000031 /* Core */ = {
+			isa = PBXGroup;
+			children = (
+				A51000000000000000000011 /* kern_start.cpp */,
+				A51000000000000000000012 /* kern_backlight.cpp */,
+				A51000000000000000000013 /* kern_backlight.hpp */,
+			);
+			name = Core;
+			sourceTree = "<group>";
+		};
+		A52000000000000000000032 /* AppleBacklight */ = {
+			isa = PBXGroup;
+			children = (
+				A52000000000000000000011 /* kern_applebacklight.cpp */,
+				A52000000000000000000012 /* kern_applebacklight.hpp */,
+				A52000000000000000000013 /* kern_applebacklight_data.hpp */,
+			);
+			name = AppleBacklight;
+			sourceTree = "<group>";
+		};
+		A52000000000000000000033 /* Radeon */ = {
+			isa = PBXGroup;
+			children = (
+				A52000000000000000000014 /* kern_radeonbacklight.cpp */,
+				A52000000000000000000015 /* kern_radeonbacklight.hpp */,
+				A52000000000000000000018 /* kern_radeon_signatures.hpp */,
+			);
+			name = Radeon;
 			sourceTree = "<group>";
 		};
 		A51000000000000000000032 /* Dependencies */ = {
@@ -87,9 +132,19 @@
 				A51000000000000000000017 /* README.md */,
 				A51000000000000000000018 /* LICENSE.txt */,
 				A51000000000000000000019 /* Changelog.md */,
+				A52000000000000000000016 /* DEBUGGING.md */,
 			);
 			name = Docs;
 			sourceTree = "<group>";
+		};
+		A52000000000000000000034 /* Scripts */ = {
+			isa = PBXGroup;
+			children = (
+				A52000000000000000000017 /* bootstrap.sh */,
+			);
+			name = Scripts;
+			path = Scripts;
+			sourceTree = SOURCE_ROOT;
 		};
 		A51000000000000000000034 /* Products */ = {
 			isa = PBXGroup;
@@ -107,6 +162,10 @@
 			buildActionMask = 2147483647;
 			files = (
 				A51000000000000000000003 /* kern_backlight.hpp in Headers */,
+				A52000000000000000000002 /* kern_applebacklight.hpp in Headers */,
+				A52000000000000000000003 /* kern_applebacklight_data.hpp in Headers */,
+				A52000000000000000000005 /* kern_radeonbacklight.hpp in Headers */,
+				A52000000000000000000006 /* kern_radeon_signatures.hpp in Headers */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -194,6 +253,8 @@
 			files = (
 				A51000000000000000000001 /* kern_start.cpp in Sources */,
 				A51000000000000000000002 /* kern_backlight.cpp in Sources */,
+				A52000000000000000000001 /* kern_applebacklight.cpp in Sources */,
+				A52000000000000000000004 /* kern_radeonbacklight.cpp in Sources */,
 				A51000000000000000000004 /* plugin_start.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -265,7 +326,7 @@
 					"$(inherited)",
 					"$(PROJECT_DIR)/MacKernelSDK/Library/x86_64",
 				);
-				MACOSX_DEPLOYMENT_TARGET = 10.15;
+				MACOSX_DEPLOYMENT_TARGET = 12.0;
 				MODULE_NAME = com.kingo132.A51mR2Backlight;
 				MODULE_START = "$(PRODUCT_NAME)_kern_start";
 				MODULE_STOP = "$(PRODUCT_NAME)_kern_stop";
@@ -316,7 +377,7 @@
 					"$(PROJECT_DIR)/MacKernelSDK/Library/x86_64",
 				);
 				LLVM_LTO = YES;
-				MACOSX_DEPLOYMENT_TARGET = 10.15;
+				MACOSX_DEPLOYMENT_TARGET = 12.0;
 				MODULE_NAME = com.kingo132.A51mR2Backlight;
 				MODULE_START = "$(PRODUCT_NAME)_kern_start";
 				MODULE_STOP = "$(PRODUCT_NAME)_kern_stop";

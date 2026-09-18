@@ -18,13 +18,35 @@ A51mR2Backlight isolates the machine-specific functionality into a dedicated plu
 
 It does **not** contain WhateverGreen's general AMD, Intel, NVIDIA, AGDP, connector, DRM, or framebuffer patches.
 
+
+## Architecture
+
+The source is intentionally split by responsibility:
+
+```text
+kern_start.cpp
+    -> BacklightController
+       -> AppleBacklightPatcher
+          - AppleBacklight panel profiles
+          - AppleMCCSControl suppression
+       -> RadeonBacklightPatcher
+          - framebuffer bklt hooks
+          - panel controller capture
+          - private AMD PWM function resolution
+          - brightness-to-PWM conversion
+```
+
+`kern_start.cpp` contains only Lilu plugin registration. `kern_backlight.*` coordinates the two independent patchers. Apple panel data lives in its own header so the control flow remains readable, while all Navi10-specific logic is confined to `kern_radeonbacklight.*`.
+
+Release builds keep a small set of stage-level `SYSLOG` messages so a failed hook can still be located. High-frequency values such as individual `bklt` and PWM writes are emitted only by Debug builds with `-a51bkldbg`.
+
 ## Supported target
 
 - Alienware Area-51m R2
 - AMD Radeon RX 5700M / Navi10 driving the internal eDP panel
-- macOS Big Sur through Tahoe
+- macOS Monterey through Tahoe
 - x86_64
-- Lilu 1.7.1 or newer
+- Lilu 1.7.2 or newer
 
 This is intentionally a machine-specific kext. Other Navi10 laptops may have similar hardware, but they are not the validation target.
 
@@ -54,7 +76,7 @@ Example OpenCore entry:
     <key>MaxKernel</key>
     <string>25.99.99</string>
     <key>MinKernel</key>
-    <string>20.0.0</string>
+    <string>21.0.0</string>
     <key>PlistPath</key>
     <string>Contents/Info.plist</string>
 </dict>
@@ -68,7 +90,7 @@ Example OpenCore entry:
 - `-a51bkldbg` — enable plugin debug logging.
 - `-a51bklbeta` — allow loading on a newer kernel than the plugin's declared maximum when supported by the installed Lilu version. Use only for bring-up/testing.
 
-Debug logs use the `a51bkl` tag.
+Logs are prefixed with `A51mR2Backlight` and use `main`, `apple`, and `radeon` module tags.
 
 ## Building
 
@@ -80,11 +102,12 @@ The layout follows normal Acidanthera/Lilu plugin projects.
 - [Lilu](https://github.com/acidanthera/Lilu)
 - [MacKernelSDK](https://github.com/acidanthera/MacKernelSDK)
 
-The CI workflow bootstraps both dependencies automatically. For a local build from a clean checkout:
+The CI workflow bootstraps dependencies automatically. For a local build from a clean checkout, use the repository bootstrap script. It downloads the official Debug Lilu SDK instead of rebuilding Lilu itself, which avoids old deployment-target failures with current Xcode versions:
 
 ```bash
-git clone https://github.com/acidanthera/MacKernelSDK.git MacKernelSDK
-src=$(/usr/bin/curl -Lfs https://raw.githubusercontent.com/acidanthera/Lilu/master/Lilu/Scripts/bootstrap.sh) && eval "$src"
+./Scripts/bootstrap.sh
+xcodebuild -jobs 1 -configuration Debug
+# or
 xcodebuild -jobs 1 -configuration Release
 ```
 
@@ -102,11 +125,19 @@ Newer Apple framebuffer builds do not reliably expose those private symbols. The
 This standalone kext is deliberately stricter:
 
 1. Try normal symbol resolution first.
-2. If the symbol is unavailable, scan the loaded framebuffer image for the known 20-byte function prologue.
+2. If the symbol is unavailable, scan the loaded framebuffer image for a validated function signature.
 3. Accept the fallback only when there is **exactly one** match.
 4. If there are zero or multiple matches, log the failure and leave the PWM path disabled rather than jumping to a guessed address.
 
-This removes the fixed Tahoe offsets (`0x12DCB3`, `0x12E0EC`) from the runtime dependency while preserving the signatures derived from the working fork.
+The supplied driver corpus exposed an important detail: the old 20-byte modern
+`dce_driver_set_backlight` prologue appears **three times** in Sonoma, Sequoia
+15.3 and Tahoe. A51mR2Backlight therefore uses a 76-byte modern signature that
+is identical at the real function entry and unique in all three supplied modern
+drivers. The panel-init signature remains 20 bytes because it is already unique.
+
+This removes the fixed Tahoe offsets (`0x12DCB3`, `0x12E0EC`) from the runtime
+dependency while still validating the exact function bodies against real Apple
+driver builds. See [`Reference/Framebuffers/README.md`](Reference/Framebuffers/README.md).
 
 ## Source lineage
 
@@ -119,6 +150,8 @@ The brightness logic comes from the author's original WhateverGreen contribution
 The AppleBacklight profile injection and AppleMCCSControl suppression are also extracted from WhateverGreen because they are part of the complete `applbkl=3` behavior, not optional cosmetic helpers.
 
 See [`Docs/EXTRACTION.md`](Docs/EXTRACTION.md) for the exact split.
+
+For bring-up on a new macOS build, follow [`Docs/DEBUGGING.md`](Docs/DEBUGGING.md) stage by stage.
 
 ## Safety / failure behavior
 
@@ -138,4 +171,9 @@ If you extract Apple's framebuffer executable from a new macOS update, verify th
 python3 Tools/verify_signatures.py /path/to/AMDRadeonX6000Framebuffer --family modern
 ```
 
-For Tahoe, both modern signatures should report exactly one match. A zero- or multi-match result is intentionally treated as unsafe by the kext as well.
+For Tahoe, both modern signatures should report exactly one match. A zero- or
+multi-match result is intentionally treated as unsafe by the kext as well.
+
+The repository also contains the supplied Big Sur, Monterey, Sonoma, Sequoia
+15.3 and Tahoe reference binaries under `Reference/Framebuffers/`, together
+with hashes, Mach-O UUIDs and verified offsets in `manifest.json`.

@@ -8,7 +8,7 @@
 
 #include "kern_backlight.hpp"
 
-static A51BKL backlight;
+static BacklightController controller;
 
 static const char *bootargOff[] {
     "-a51bkloff"
@@ -32,9 +32,9 @@ PluginConfiguration ADDPR(config) {
     arrsize(bootargDebug),
     bootargBeta,
     arrsize(bootargBeta),
-    KernelVersion::BigSur,
+    KernelVersion::Monterey,
     KernelVersion::Tahoe,
     []() {
-        backlight.init();
+        controller.init();
     }
 };
