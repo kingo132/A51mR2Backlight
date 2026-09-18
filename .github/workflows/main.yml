@@ -23,9 +23,19 @@ jobs:
       - name: CI bootstrap
         run: |
           src=$(/usr/bin/curl -Lfs https://raw.githubusercontent.com/acidanthera/ocbuild/master/ci-bootstrap.sh) && eval "$src" || exit 1
-      - name: Lilu bootstrap
+      - name: Plugin dependencies
+        run: ./Scripts/bootstrap.sh
+      - name: Verify framebuffer signatures
         run: |
-          src=$(/usr/bin/curl -Lfs https://raw.githubusercontent.com/acidanthera/Lilu/master/Lilu/Scripts/bootstrap.sh) && eval "$src" || exit 1
+          python3 Tools/verify_signatures.py \
+            Reference/Framebuffers/AMDRadeonX6000Framebuffer.bigsur \
+            Reference/Framebuffers/AMDRadeonX6000Framebuffer.monterey \
+            --family legacy
+          python3 Tools/verify_signatures.py \
+            Reference/Framebuffers/AMDRadeonX6000Framebuffer.sonoma \
+            Reference/Framebuffers/AMDRadeonX6000Framebuffer.sequoia.15.3 \
+            Reference/Framebuffers/AMDRadeonX6000Framebuffer.tahoe \
+            --family modern
       - run: xcodebuild -jobs 1 -configuration Debug
       - run: xcodebuild -jobs 1 -configuration Release
       - name: Upload artifacts

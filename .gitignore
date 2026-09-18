@@ -6,3 +6,5 @@ xcuserdata
 xcshareddata
 project.xcworkspace
 /MacKernelSDK
+
+__pycache__/
